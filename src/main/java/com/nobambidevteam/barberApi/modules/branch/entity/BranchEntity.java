@@ -1,8 +1,7 @@
 package com.nobambidevteam.barberApi.modules.branch.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -11,6 +10,9 @@ import java.util.UUID;
 @Table(name = "branches")
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class BranchEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -21,7 +23,10 @@ public class BranchEntity {
 
     private String address;
     private String phone;
-    private String timezone;
+
+    @Column(name = "timezone")
+    @Builder.Default
+    private String timezone = "America/Argentina/Buenos_Aires";
 
     @Column(name = "map_iframe_url")
     private String mapIframeUrl;
@@ -30,6 +35,7 @@ public class BranchEntity {
     private String googleMapsUrl;
 
     @Column(name = "is_active")
+    @Builder.Default
     private boolean isActive = true;
 
     @Column(name = "created_at", insertable = false, updatable = false)
