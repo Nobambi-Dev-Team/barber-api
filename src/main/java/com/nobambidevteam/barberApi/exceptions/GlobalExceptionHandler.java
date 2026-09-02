@@ -1,11 +1,13 @@
 package com.nobambidevteam.barberApi.exceptions;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -55,11 +57,30 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "No tienes los permisos necesarios para realizar esta acción.");
     }
 
+    // Manejador específico para errores en el Login (/auth/login)
     @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
-    public ProblemDetail handleAuthenticationErrors(Exception ex) {
+    public ProblemDetail handleBadCredentials(Exception ex) {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
                 "Credenciales inválidas. Verifica tu correo y contraseña."
+        );
+    }
+
+    // Manejador general para accesos sin token a rutas protegidas (InsufficientAuthenticationException)
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthenticationErrors(AuthenticationException ex) {
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                "No estás autenticado. Debes proveer un token de acceso válido."
+        );
+    }
+
+    // Manejo de errores específicos del JWT (manipulado, expirado, mal formado)
+    @ExceptionHandler(JWTVerificationException.class)
+    public ProblemDetail handleJwtVerificationException(JWTVerificationException ex) {
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                "Token de acceso inválido o expirado. Por favor, inicia sesión nuevamente."
         );
     }
 
