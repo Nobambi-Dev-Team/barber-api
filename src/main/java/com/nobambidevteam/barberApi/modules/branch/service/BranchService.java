@@ -10,6 +10,8 @@ import com.nobambidevteam.barberApi.modules.branch.service.interfaces.IBranchSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class BranchService implements IBranchService {
@@ -52,6 +54,16 @@ public class BranchService implements IBranchService {
         if (exists) {
             throw new BusinessRuleException("Ya existe una sucursal con el nombre: " + branchName);
         }
+    }
+
+
+    //-------------------Get All
+    @Override
+    public List<BranchDto> getAll() {
+        return branchRepository.findAll()
+                .stream()
+                .map(BranchMapper::toDto)
+                .toList();
     }
 
 }

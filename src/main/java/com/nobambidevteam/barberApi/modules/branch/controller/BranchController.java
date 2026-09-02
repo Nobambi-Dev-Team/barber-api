@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/branches")
 @RequiredArgsConstructor
@@ -24,6 +26,10 @@ public class BranchController {
         return branchService.save(request);
     }
 
-
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<BranchDto> getAllBranches(){
+        return branchService.getAll();
+    }
 
 }

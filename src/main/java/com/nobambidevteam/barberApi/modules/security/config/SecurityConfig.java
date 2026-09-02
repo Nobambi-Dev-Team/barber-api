@@ -7,6 +7,7 @@ import com.nobambidevteam.barberApi.modules.security.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -57,6 +58,7 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtTokenValidator(jwtUtils, exceptionResolver), BasicAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/branches").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
