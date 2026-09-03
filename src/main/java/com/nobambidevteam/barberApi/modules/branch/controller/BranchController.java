@@ -42,4 +42,11 @@ public class BranchController {
         return branchService.update(id, request);
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('BRANCH_MANAGE')")
+    public void deleteBranch(@PathVariable UUID id) {
+        branchService.deleteLogical(id);
+    }
+
 }

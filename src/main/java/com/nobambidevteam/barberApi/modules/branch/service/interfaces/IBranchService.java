@@ -14,4 +14,6 @@ public interface IBranchService {
     List<BranchDto> getAll();
 
     BranchDto update(UUID id, BranchUpdateDto request);
+
+    void deleteLogical(UUID id);
 }

@@ -121,4 +121,16 @@ public class BranchService implements IBranchService {
         }
     }
 
+
+    //--------------------------Delete logical
+    @Override
+    public void deleteLogical(UUID id) {
+        BranchEntity branch = branchRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la sucursal con id " + id));
+
+        if (branch.isActive()) {
+            branch.setActive(false);
+            branchRepository.save(branch);
+        }
+    }
 }
