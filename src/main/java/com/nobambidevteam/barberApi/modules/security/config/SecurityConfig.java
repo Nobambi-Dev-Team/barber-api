@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/branches").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/services").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/staff/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

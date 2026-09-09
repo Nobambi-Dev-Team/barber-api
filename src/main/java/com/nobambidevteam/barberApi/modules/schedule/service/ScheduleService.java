@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -66,5 +67,17 @@ public class ScheduleService implements IScheduleService {
         }
     }
 
+
+    //---------------------Get schedules By Staff
+    @Override
+    public List<ScheduleDto> getSchedulesByStaff(UUID staffId) {
+
+        /*Validar existencia del staff*/
+
+        return scheduleRepository.findActiveSchedulesByStaff(staffId)
+                .stream()
+                .map(ScheduleMapper::toDto)
+                .toList();
+    }
 
 }

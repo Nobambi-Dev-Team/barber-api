@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -21,4 +22,13 @@ public interface IScheduleRepository extends JpaRepository<ScheduleEntity, UUID>
                                   @Param("dayOfWeek") int dayOfWeek,
                                   @Param("startTime") LocalTime startTime,
                                   @Param("endTime") LocalTime endTime);
+
+
+    @Query("SELECT s FROM ScheduleEntity s " +
+            "WHERE s.staff.id = :staffId " +
+            "AND s.isActive = true " +
+            "ORDER BY " +
+            "CASE WHEN s.dayOfWeek = 0 THEN 7 ELSE s.dayOfWeek END ASC, s.startTime ASC")
+    List<ScheduleEntity> findActiveSchedulesByStaff(@Param("staffId") UUID staffId);
+
 }

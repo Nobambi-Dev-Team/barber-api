@@ -9,6 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/schedules")
 @RequiredArgsConstructor
@@ -23,4 +26,9 @@ public class ScheduleController {
         return scheduleService.save(request);
     }
 
+    @GetMapping("/staff/{staffId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ScheduleDto> getSchedulesByStaff(@PathVariable UUID staffId){
+        return scheduleService.getSchedulesByStaff(staffId);
+    }
 }
