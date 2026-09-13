@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
 
-public interface IStaffRepository extends JpaRepository<StaffEntity, Long> {
+public interface IStaffRepository extends JpaRepository<StaffEntity, UUID> {
     boolean existsByUserId(UUID userId);
 }
