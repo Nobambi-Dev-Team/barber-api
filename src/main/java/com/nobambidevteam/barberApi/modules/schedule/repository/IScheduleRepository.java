@@ -31,4 +31,16 @@ public interface IScheduleRepository extends JpaRepository<ScheduleEntity, UUID>
             "CASE WHEN s.dayOfWeek = 0 THEN 7 ELSE s.dayOfWeek END ASC, s.startTime ASC")
     List<ScheduleEntity> findActiveSchedulesByStaff(@Param("staffId") UUID staffId);
 
+
+    @Query("""
+        SELECT s FROM ScheduleEntity s 
+        WHERE s.staff.id = :staffId 
+          AND s.dayOfWeek = :dayOfWeek 
+          AND s.isActive = true 
+        ORDER BY s.startTime ASC
+    """)
+    List<ScheduleEntity> findSchedulesForAvailability(
+            @Param("staffId") UUID staffId,
+            @Param("dayOfWeek") int dayOfWeek);
+
 }
