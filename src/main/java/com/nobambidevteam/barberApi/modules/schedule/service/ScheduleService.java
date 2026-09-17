@@ -7,6 +7,7 @@ import com.nobambidevteam.barberApi.modules.branch.entity.BranchEntity;
 import com.nobambidevteam.barberApi.modules.branch.repository.IBranchRepository;
 import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleCreateDto;
 import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleDto;
+import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleUpdateDto;
 import com.nobambidevteam.barberApi.modules.schedule.entity.DateExceptionEntity;
 import com.nobambidevteam.barberApi.modules.schedule.entity.ScheduleEntity;
 import com.nobambidevteam.barberApi.modules.schedule.mapper.ScheduleMapper;
@@ -34,8 +35,11 @@ public class ScheduleService implements IScheduleService {
 
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
-    private record TimeBlock(LocalTime startTime, LocalTime endTime) {}
-    private record DailyScheduleContext(List<TimeBlock> workingBlocks, List<DateExceptionEntity> parches) {}
+    private record TimeBlock(LocalTime startTime, LocalTime endTime) {
+    }
+
+    private record DailyScheduleContext(List<TimeBlock> workingBlocks, List<DateExceptionEntity> parches) {
+    }
 
 
     //-----------------------Save
@@ -195,6 +199,70 @@ public class ScheduleService implements IScheduleService {
             // Colisión: El turno inicia antes de que termine el parche, y termina después de que el parche inicia
             return currentSlot.isBefore(parche.getEndTime()) && currentSlotEnd.isAfter(parche.getStartTime());
         });
+    }
+
+    //-------------------------------Update
+    @Override
+    public ScheduleDto update(UUID scheduleId, ScheduleUpdateDto request) {
+
+        // Obtener la entidad original
+        ScheduleEntity scheduleToUpdate = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la schedule de id " + scheduleId));
+
+        // Aplicar los cambios de la request
+        applyPartialUpdates(scheduleToUpdate, request);
+
+        // Validar el estado resultante
+        validateUpdatedSchedule(scheduleToUpdate);
+
+        // Guardar y retornar
+        ScheduleEntity updatedSchedule = scheduleRepository.save(scheduleToUpdate);
+        return ScheduleMapper.toDto(updatedSchedule);
+    }
+
+    private void applyPartialUpdates(ScheduleEntity schedule, ScheduleUpdateDto request) {
+        if (request.staffId() != null) {
+            StaffEntity mockStaff = new StaffEntity(); // mockeado por ahora
+            mockStaff.setId(request.staffId());
+            schedule.setStaff(mockStaff);
+        }
+
+        if (request.branchId() != null) {
+            BranchEntity branch = branchRepository.findById(request.branchId())
+                    .orElseThrow(() -> new ResourceNotFoundException("No se encontró la sucursal de id " + request.branchId()));
+
+//            if (!branch.isActive()) {
+//                throw new BusinessRuleException("No se puede asignar un horario a una sucursal inactiva.");
+//            }
+
+            schedule.setBranch(branch);
+        }
+
+        if (request.dayOfWeek() != null) schedule.setDayOfWeek(request.dayOfWeek());
+        if (request.startTime() != null) schedule.setStartTime(request.startTime());
+        if (request.endTime() != null) schedule.setEndTime(request.endTime());
+        if (request.isActive() != null) schedule.setActive(request.isActive());
+    }
+
+    private void validateUpdatedSchedule(ScheduleEntity schedule) {
+        validateTimeRange(schedule.getStartTime(), schedule.getEndTime());
+
+        if (schedule.isActive()) {
+            validateOverlapForUpdate(
+                    schedule.getId(),
+                    schedule.getStaff().getId(),
+                    schedule.getDayOfWeek(),
+                    schedule.getStartTime(),
+                    schedule.getEndTime()
+            );
+        }
+    }
+
+    private void validateOverlapForUpdate(UUID scheduleId, UUID staffId, int dayOfWeek, LocalTime startTime, LocalTime endTime) {
+        int count = scheduleRepository.countOverlappingSchedulesForUpdate(scheduleId, staffId, dayOfWeek, startTime, endTime);
+        if (count > 0) {
+            throw new BusinessRuleException("El horario elegido se solapa con otro turno existente del barbero.");
+        }
     }
 
 }

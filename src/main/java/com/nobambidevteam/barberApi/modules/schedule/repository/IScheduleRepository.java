@@ -24,6 +24,19 @@ public interface IScheduleRepository extends JpaRepository<ScheduleEntity, UUID>
                                   @Param("endTime") LocalTime endTime);
 
 
+    @Query("SELECT COUNT(s) FROM ScheduleEntity s " +
+            "WHERE s.id != :scheduleId " +
+            "AND s.staff.id = :staffId " +
+            "AND s.dayOfWeek = :dayOfWeek " +
+            "AND s.startTime < :endTime " +
+            "AND s.endTime > :startTime " +
+            "AND s.isActive = true")
+    int countOverlappingSchedulesForUpdate(@Param("scheduleId") UUID scheduleId,
+                                           @Param("staffId") UUID staffId,
+                                           @Param("dayOfWeek") int dayOfWeek,
+                                           @Param("startTime") LocalTime startTime,
+                                           @Param("endTime") LocalTime endTime);
+
     @Query("SELECT s FROM ScheduleEntity s " +
             "WHERE s.staff.id = :staffId " +
             "AND s.isActive = true " +
@@ -42,5 +55,6 @@ public interface IScheduleRepository extends JpaRepository<ScheduleEntity, UUID>
     List<ScheduleEntity> findSchedulesForAvailability(
             @Param("staffId") UUID staffId,
             @Param("dayOfWeek") int dayOfWeek);
+
 
 }

@@ -2,6 +2,7 @@ package com.nobambidevteam.barberApi.modules.schedule.controller;
 
 import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleCreateDto;
 import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleDto;
+import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleUpdateDto;
 import com.nobambidevteam.barberApi.modules.schedule.service.interfaz.IScheduleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +46,12 @@ public class ScheduleController {
 
         return scheduleService.getAvailability(staffId, serviceId, date);
 
+    }
+
+    @PatchMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('SCHEDULE_MANAGE_ANY')")
+    public ScheduleDto updateSchedule(@PathVariable("id") UUID scheduleId, @Valid @RequestBody ScheduleUpdateDto request){
+        return scheduleService.update(scheduleId, request);
     }
 }
