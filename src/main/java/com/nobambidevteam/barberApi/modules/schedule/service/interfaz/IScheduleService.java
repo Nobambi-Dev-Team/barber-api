@@ -18,4 +18,6 @@ public interface IScheduleService {
     List<LocalTime> getAvailability(UUID staffId, UUID serviceId, LocalDate date);
 
     ScheduleDto update(UUID scheduleId, ScheduleUpdateDto request);
+
+    void delete(UUID scheduleId);
 }

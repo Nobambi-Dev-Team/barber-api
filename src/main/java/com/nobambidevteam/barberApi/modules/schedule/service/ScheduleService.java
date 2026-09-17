@@ -265,4 +265,15 @@ public class ScheduleService implements IScheduleService {
         }
     }
 
+    //---------------------------Delete
+    @Override
+    public void delete(UUID scheduleId) {
+
+        ScheduleEntity schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró a la schedule de id " + scheduleId));
+
+        schedule.setActive(false);
+        scheduleRepository.save(schedule);
+    }
+
 }

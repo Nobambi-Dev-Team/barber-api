@@ -54,4 +54,11 @@ public class ScheduleController {
     public ScheduleDto updateSchedule(@PathVariable("id") UUID scheduleId, @Valid @RequestBody ScheduleUpdateDto request){
         return scheduleService.update(scheduleId, request);
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('SCHEDULE_MANAGE_ANY')")
+    public void deleteSchedule(@PathVariable("id") UUID scheduleId){
+        scheduleService.delete(scheduleId);
+    }
 }
