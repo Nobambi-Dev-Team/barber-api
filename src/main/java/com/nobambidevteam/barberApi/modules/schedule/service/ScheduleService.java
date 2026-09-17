@@ -115,7 +115,7 @@ public class ScheduleService implements IScheduleService {
 
     // Definir la jornada laboral (Reemplazos o Rutina normal)
     private DailyScheduleContext determineDailySchedule(UUID staffId, LocalDate date) {
-        List<DateExceptionEntity> staffDateExceptions = dateExceptionRepository.findByStaffIdAndExceptionDate(staffId, date);
+        List<DateExceptionEntity> staffDateExceptions = new ArrayList<>();// TODO: Descomentar y usar dateExceptionRepository al integrar el módulo: dateExceptionRepository.findByStaffIdAndExceptionDate(staffId, date);
 
         List<DateExceptionEntity> reemplazos = staffDateExceptions.stream()
                 .filter(e -> !e.isUnavailable())
@@ -145,7 +145,7 @@ public class ScheduleService implements IScheduleService {
     private List<AppointmentEntity> fetchAppointmentsForDate(UUID staffId, LocalDate date) {
         Instant startOfDay = date.atStartOfDay(DEFAULT_ZONE).toInstant();
         Instant endOfDay = date.plusDays(1).atStartOfDay(DEFAULT_ZONE).toInstant();
-        return appointmentRepository.findActiveAppointmentsByStaffAndDate(staffId, startOfDay, endOfDay);
+        return new ArrayList<>();// TODO: Descomentar y usar appointmentRepository al integrar el módulo: appointmentRepository.findActiveAppointmentsByStaffAndDate(staffId, startOfDay, endOfDay);
     }
 
     // Calculamos los turnos disponibles
