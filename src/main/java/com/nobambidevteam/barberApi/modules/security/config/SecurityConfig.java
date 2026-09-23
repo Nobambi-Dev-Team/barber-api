@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/branches").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/services").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/schedules/staff/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/availability").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
