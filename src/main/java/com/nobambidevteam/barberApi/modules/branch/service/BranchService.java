@@ -9,7 +9,6 @@ import com.nobambidevteam.barberApi.modules.branch.entity.BranchEntity;
 import com.nobambidevteam.barberApi.modules.branch.mapper.BranchMapper;
 import com.nobambidevteam.barberApi.modules.branch.repository.IBranchRepository;
 import com.nobambidevteam.barberApi.modules.branch.service.interfaces.IBranchService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -3,6 +3,7 @@ package com.nobambidevteam.barberApi.modules.schedule.service;
 import com.nobambidevteam.barberApi.exceptions.BusinessRuleException;
 import com.nobambidevteam.barberApi.exceptions.ResourceNotFoundException;
 import com.nobambidevteam.barberApi.modules.appointment.entity.AppointmentEntity;
+import com.nobambidevteam.barberApi.modules.appointment.repository.IAppointmentRepository;
 import com.nobambidevteam.barberApi.modules.branch.entity.BranchEntity;
 import com.nobambidevteam.barberApi.modules.branch.repository.IBranchRepository;
 import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleCreateDto;
@@ -11,11 +12,13 @@ import com.nobambidevteam.barberApi.modules.schedule.dto.ScheduleUpdateDto;
 import com.nobambidevteam.barberApi.modules.schedule.entity.DateExceptionEntity;
 import com.nobambidevteam.barberApi.modules.schedule.entity.ScheduleEntity;
 import com.nobambidevteam.barberApi.modules.schedule.mapper.ScheduleMapper;
+import com.nobambidevteam.barberApi.modules.schedule.repository.IDateExceptionRepository;
 import com.nobambidevteam.barberApi.modules.schedule.repository.IScheduleRepository;
 import com.nobambidevteam.barberApi.modules.schedule.service.interfaz.IScheduleService;
 import com.nobambidevteam.barberApi.modules.service.entity.ServiceEntity;
 import com.nobambidevteam.barberApi.modules.service.repository.IServiceRepository;
 import com.nobambidevteam.barberApi.modules.staff.entity.StaffEntity;
+import com.nobambidevteam.barberApi.modules.staff.repository.IStaffRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,10 @@ public class ScheduleService implements IScheduleService {
     private final IScheduleRepository scheduleRepository;
     private final IBranchRepository branchRepository;
     private final IServiceRepository serviceRepository;
+    private final IStaffRepository staffRepository;
+    private final IDateExceptionRepository dateExceptionRepository;
+    private final IAppointmentRepository appointmentRepository;
+
 
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
@@ -51,16 +58,15 @@ public class ScheduleService implements IScheduleService {
         BranchEntity branchEntity = branchRepository.findById(request.branchId())
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la sucursal de id " + request.branchId()));
 
-        // MOCK de staff entity
-        StaffEntity mockStaff = new StaffEntity();
-        mockStaff.setId(request.staffId());
+        StaffEntity staff = staffRepository.findById(request.staffId())
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró al barbero de id " + request.staffId()));
 
         // Validaciones
         validateTimeRange(request.startTime(), request.endTime());
         validateOverlap(request.staffId(), request.dayOfWeek(), request.startTime(), request.endTime());
 
         // Mapear y Guardar
-        ScheduleEntity scheduleToSave = ScheduleMapper.toEntity(request, mockStaff, branchEntity);
+        ScheduleEntity scheduleToSave = ScheduleMapper.toEntity(request, staff, branchEntity);
         ScheduleEntity savedSchedule = scheduleRepository.save(scheduleToSave);
 
         return ScheduleMapper.toDto(savedSchedule);
@@ -84,7 +90,8 @@ public class ScheduleService implements IScheduleService {
     @Override
     public List<ScheduleDto> getSchedulesByStaff(UUID staffId) {
 
-        /*Validar existencia del staff*/
+        StaffEntity staff = staffRepository.findById(staffId)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró al barbero de id " + staffId));
 
         return scheduleRepository.findActiveSchedulesByStaff(staffId)
                 .stream()
@@ -115,7 +122,7 @@ public class ScheduleService implements IScheduleService {
 
     // Definir la jornada laboral (Reemplazos o Rutina normal)
     private DailyScheduleContext determineDailySchedule(UUID staffId, LocalDate date) {
-        List<DateExceptionEntity> staffDateExceptions = new ArrayList<>();// TODO: Descomentar y usar dateExceptionRepository al integrar el módulo: dateExceptionRepository.findByStaffIdAndExceptionDate(staffId, date);
+        List<DateExceptionEntity> staffDateExceptions = dateExceptionRepository.findByStaffIdAndExceptionDate(staffId, date);
 
         List<DateExceptionEntity> reemplazos = staffDateExceptions.stream()
                 .filter(e -> !e.isUnavailable())
@@ -145,7 +152,8 @@ public class ScheduleService implements IScheduleService {
     private List<AppointmentEntity> fetchAppointmentsForDate(UUID staffId, LocalDate date) {
         Instant startOfDay = date.atStartOfDay(DEFAULT_ZONE).toInstant();
         Instant endOfDay = date.plusDays(1).atStartOfDay(DEFAULT_ZONE).toInstant();
-        return new ArrayList<>();// TODO: Descomentar y usar appointmentRepository al integrar el módulo: appointmentRepository.findActiveAppointmentsByStaffAndDate(staffId, startOfDay, endOfDay);
+
+        return appointmentRepository.findActiveAppointmentsByStaffAndDate(staffId, startOfDay, endOfDay);
     }
 
     // Calculamos los turnos disponibles
@@ -159,12 +167,15 @@ public class ScheduleService implements IScheduleService {
 
         for (TimeBlock block : context.workingBlocks()) {
             LocalTime currentSlot = block.startTime();
+            LocalTime currentSlotEnd = currentSlot.plusMinutes(timeService);
 
-            while (!currentSlot.plusMinutes(timeService).isAfter(block.endTime())) {
-                LocalTime currentSlotEnd = currentSlot.plusMinutes(timeService);
+            // Condición 1: currentSlotEnd.isAfter(currentSlot) previene el bucle infinito si currentSlotEnd llega a las 00:00
+            // Condición 2: No debe superar la hora de finalización del bloque
+            while (currentSlotEnd.isAfter(currentSlot) && !currentSlotEnd.isAfter(block.endTime())) {
 
                 if (isToday && currentSlot.isBefore(timeNow)) {
                     currentSlot = currentSlotEnd;
+                    currentSlotEnd = currentSlot.plusMinutes(timeService);
                     continue;
                 }
 
@@ -176,6 +187,7 @@ public class ScheduleService implements IScheduleService {
                 }
 
                 currentSlot = currentSlotEnd;
+                currentSlotEnd = currentSlot.plusMinutes(timeService);
             }
         }
         return availableSlots;
@@ -203,6 +215,7 @@ public class ScheduleService implements IScheduleService {
 
     //-------------------------------Update
     @Override
+    @Transactional
     public ScheduleDto update(UUID scheduleId, ScheduleUpdateDto request) {
 
         // Obtener la entidad original
@@ -222,9 +235,9 @@ public class ScheduleService implements IScheduleService {
 
     private void applyPartialUpdates(ScheduleEntity schedule, ScheduleUpdateDto request) {
         if (request.staffId() != null) {
-            StaffEntity mockStaff = new StaffEntity(); // mockeado por ahora
-            mockStaff.setId(request.staffId());
-            schedule.setStaff(mockStaff);
+            StaffEntity staff = staffRepository.findById(request.staffId())
+                    .orElseThrow(() -> new ResourceNotFoundException("No se encontró al barbero de id " + request.staffId()));
+            schedule.setStaff(staff);
         }
 
         if (request.branchId() != null) {
@@ -267,6 +280,7 @@ public class ScheduleService implements IScheduleService {
 
     //---------------------------Delete
     @Override
+    @Transactional
     public void delete(UUID scheduleId) {
 
         ScheduleEntity schedule = scheduleRepository.findById(scheduleId)
