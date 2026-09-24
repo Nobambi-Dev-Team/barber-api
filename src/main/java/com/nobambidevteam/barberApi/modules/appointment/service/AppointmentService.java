@@ -2,6 +2,7 @@ package com.nobambidevteam.barberApi.modules.appointment.service;
 
 import com.nobambidevteam.barberApi.exceptions.BusinessRuleException;
 import com.nobambidevteam.barberApi.exceptions.ResourceNotFoundException;
+import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentAssignDto;
 import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentBookDto;
 import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentDto;
 import com.nobambidevteam.barberApi.modules.appointment.dto.OtpVerifyRequestDto;
@@ -73,8 +74,28 @@ public class AppointmentService implements IAppointmentService {
         // Validar OTP
         validateOtp(mockCustomerPhone, request.code());
 
-        // 4. Confirmar turno
+        // Confirmar turno
         appointment.setStatus("CONFIRMED");
+        appointment = appointmentRepository.save(appointment);
+
+        return AppointmentMapper.toDto(appointment);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDto assign(AppointmentAssignDto request) {
+        // Obtener el servicio para calcular la duración
+        ServiceEntity service = serviceRepository.findById(request.serviceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado con id: " + request.serviceId()));
+
+        Instant endAt = request.startAt().plus(service.getDurationMinutes(), ChronoUnit.MINUTES);
+
+        // TODO -> Opcional: Validar que el customerId realmente exista en la base de datos
+        // boolean customerExists = customerRepository.existsById(request.customerId());
+        // if (!customerExists) throw new ResourceNotFoundException("Cliente no encontrado");
+
+        // Crear el turno directamente en estado CONFIRMED
+        AppointmentEntity appointment = AppointmentMapper.toEntity(request, endAt);
         appointment = appointmentRepository.save(appointment);
 
         return AppointmentMapper.toDto(appointment);
@@ -112,4 +133,6 @@ public class AppointmentService implements IAppointmentService {
         otp.setVerified(true);
         otpVerificationRepository.save(otp);
     }
+
+
 }
