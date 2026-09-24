@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -159,6 +160,33 @@ public class AppointmentService implements IAppointmentService {
         appointment = appointmentRepository.save(appointment);
 
         return AppointmentMapper.toDto(appointment);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AppointmentDto> getAppointmentsByStaffAndDateRange(UUID staffId, Instant start, Instant end) {
+        // Validación de negocio
+        if (start.isAfter(end)) {
+            throw new BusinessRuleException("La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+
+        List<AppointmentEntity> appointments = appointmentRepository
+                .findByStaffIdAndStartAtBetweenOrderByStartAtAsc(staffId, start, end);
+
+        return appointments.stream()
+                .map(AppointmentMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AppointmentDto> getPendingAppointments() {
+        List<AppointmentEntity> appointments = appointmentRepository
+                .findByStatusOrderByStartAtAsc("PENDING");
+
+        return appointments.stream()
+                .map(AppointmentMapper::toDto)
+                .toList();
     }
 
     private void generateAndSaveOtp(String phoneNumber) {
