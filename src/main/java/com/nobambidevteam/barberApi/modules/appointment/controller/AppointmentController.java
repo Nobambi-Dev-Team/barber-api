@@ -1,19 +1,15 @@
 package com.nobambidevteam.barberApi.modules.appointment.controller;
 
-import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentAssignDto;
-import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentBookDto;
-import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentDto;
-import com.nobambidevteam.barberApi.modules.appointment.dto.OtpVerifyRequestDto;
+import com.nobambidevteam.barberApi.modules.appointment.dto.*;
 import com.nobambidevteam.barberApi.modules.appointment.service.interfaces.IAppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -39,5 +35,30 @@ public class AppointmentController {
     public ResponseEntity<AppointmentDto> assignAppointment(@Valid @RequestBody AppointmentAssignDto request) {
         AppointmentDto response = appointmentService.assign(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/{id}/confirm")
+    @PreAuthorize("hasAuthority('APPOINTMENTS_CONFIRM')")
+    public ResponseEntity<AppointmentDto> confirmAppointment(@PathVariable UUID id) {
+        AppointmentDto response = appointmentService.confirm(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('APPOINTMENTS_CANCEL')")
+    public ResponseEntity<AppointmentDto> cancelAppointment(
+            @PathVariable UUID id,
+            @Valid @RequestBody AppointmentCancelDto request) {
+        AppointmentDto response = appointmentService.cancel(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/reschedule")
+    @PreAuthorize("hasAuthority('APPOINTMENTS_RESCHEDULE')")
+    public ResponseEntity<AppointmentDto> rescheduleAppointment(
+            @PathVariable UUID id,
+            @Valid @RequestBody AppointmentRescheduleDto request) {
+        AppointmentDto response = appointmentService.reschedule(id, request);
+        return ResponseEntity.ok(response);
     }
 }

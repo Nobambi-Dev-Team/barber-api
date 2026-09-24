@@ -2,10 +2,7 @@ package com.nobambidevteam.barberApi.modules.appointment.service;
 
 import com.nobambidevteam.barberApi.exceptions.BusinessRuleException;
 import com.nobambidevteam.barberApi.exceptions.ResourceNotFoundException;
-import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentAssignDto;
-import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentBookDto;
-import com.nobambidevteam.barberApi.modules.appointment.dto.AppointmentDto;
-import com.nobambidevteam.barberApi.modules.appointment.dto.OtpVerifyRequestDto;
+import com.nobambidevteam.barberApi.modules.appointment.dto.*;
 import com.nobambidevteam.barberApi.modules.appointment.entity.AppointmentEntity;
 import com.nobambidevteam.barberApi.modules.appointment.entity.OtpVerificationEntity;
 import com.nobambidevteam.barberApi.modules.appointment.mapper.AppointmentMapper;
@@ -96,6 +93,69 @@ public class AppointmentService implements IAppointmentService {
 
         // Crear el turno directamente en estado CONFIRMED
         AppointmentEntity appointment = AppointmentMapper.toEntity(request, endAt);
+        appointment = appointmentRepository.save(appointment);
+
+        return AppointmentMapper.toDto(appointment);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDto confirm(UUID id) {
+        AppointmentEntity appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado con id: " + id));
+
+        // Regla de negocio: Solo podemos confirmar turnos pendientes
+        if (!"PENDING".equalsIgnoreCase(appointment.getStatus())) {
+            throw new BusinessRuleException("Solo se pueden confirmar turnos en estado PENDING.");
+        }
+
+        appointment.setStatus("CONFIRMED");
+        appointment = appointmentRepository.save(appointment);
+
+        return AppointmentMapper.toDto(appointment);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDto cancel(UUID id, AppointmentCancelDto request) {
+        AppointmentEntity appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado con id: " + id));
+
+        // Regla de negocio: Solo podemos confirmar turnos pendientes
+        if ("CANCELLED".equalsIgnoreCase(appointment.getStatus())) {
+            throw new BusinessRuleException("El turno ya se encuentra cancelado");
+        }
+
+        appointment.setStatus("CANCELLED");
+        appointment.setCancelReason(request.reason());
+        appointment = appointmentRepository.save(appointment);
+
+        return AppointmentMapper.toDto(appointment);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDto reschedule(UUID id, AppointmentRescheduleDto request) {
+        AppointmentEntity appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado con id: " + id));
+
+        // Regla de negocio: No aplica a turnos CANCELLED ni COMPLETED
+        String status = appointment.getStatus().toUpperCase();
+        if ("CANCELLED".equals(status) || "COMPLETED".equals(status)) {
+            throw new BusinessRuleException("No se puede reprogramar un turno que ya está " + status + ".");
+        }
+
+        // Recuperamos el servicio asociado para saber su duración (necesario para el nuevo endAt)
+        ServiceEntity service = serviceRepository.findById(appointment.getServiceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Servicio asociado no encontrado"));
+
+        Instant newEndAt = request.startAt().plus(service.getDurationMinutes(), ChronoUnit.MINUTES);
+
+        appointment.setStartAt(request.startAt());
+        appointment.setEndAt(newEndAt);
+        // TODO preguntar a los chango: Si el turno estaba PENDING y se reprograma por admin, ¿pasa a CONFIRMED o sigue PENDING?
+        // En este caso mantenemos su estado original, o podría forzarse a CONFIRMED según requiera el negocio.
+
         appointment = appointmentRepository.save(appointment);
 
         return AppointmentMapper.toDto(appointment);
