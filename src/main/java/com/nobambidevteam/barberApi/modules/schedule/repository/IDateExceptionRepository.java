@@ -2,11 +2,13 @@ package com.nobambidevteam.barberApi.modules.schedule.repository;
 
 import com.nobambidevteam.barberApi.modules.schedule.entity.DateExceptionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@Repository
 public interface IDateExceptionRepository extends JpaRepository<DateExceptionEntity, UUID> {
 
     /**
@@ -16,5 +18,7 @@ public interface IDateExceptionRepository extends JpaRepository<DateExceptionEnt
      * @return
      */
     List<DateExceptionEntity> findByStaffIdAndExceptionDate(UUID staffId, LocalDate exceptionDate);
+
+    List<DateExceptionEntity> findByStaffId(UUID staffId);
 
 }
