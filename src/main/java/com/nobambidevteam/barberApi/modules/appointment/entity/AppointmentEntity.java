@@ -1,5 +1,6 @@
 package com.nobambidevteam.barberApi.modules.appointment.entity;
 
+import com.nobambidevteam.barberApi.modules.appointment.enums.AppointmentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,8 +35,9 @@ public class AppointmentEntity {
     @Column(name = "end_at", nullable = false)
     private Instant endAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "PENDING";
+    private AppointmentStatus status = AppointmentStatus.PENDING;
 
     private String notes;
 

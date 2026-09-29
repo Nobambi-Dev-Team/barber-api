@@ -5,6 +5,7 @@ import com.nobambidevteam.barberApi.exceptions.ResourceNotFoundException;
 import com.nobambidevteam.barberApi.modules.appointment.dto.*;
 import com.nobambidevteam.barberApi.modules.appointment.entity.AppointmentEntity;
 import com.nobambidevteam.barberApi.modules.appointment.entity.OtpVerificationEntity;
+import com.nobambidevteam.barberApi.modules.appointment.enums.AppointmentStatus;
 import com.nobambidevteam.barberApi.modules.appointment.mapper.AppointmentMapper;
 import com.nobambidevteam.barberApi.modules.appointment.repository.IAppointmentRepository;
 import com.nobambidevteam.barberApi.modules.appointment.repository.IOtpVerificationRepository;
@@ -61,7 +62,7 @@ public class AppointmentService implements IAppointmentService {
         AppointmentEntity appointment = appointmentRepository.findById(request.appointmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado"));
 
-        if (!"PENDING".equalsIgnoreCase(appointment.getStatus())) {
+        if (appointment.getStatus() != AppointmentStatus.PENDING) {
             throw new BusinessRuleException("El turno ya no está en estado pendiente.");
         }
 
@@ -73,7 +74,7 @@ public class AppointmentService implements IAppointmentService {
         validateOtp(mockCustomerPhone, request.code());
 
         // Confirmar turno
-        appointment.setStatus("CONFIRMED");
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
         appointment = appointmentRepository.save(appointment);
 
         return AppointmentMapper.toDto(appointment);
@@ -106,11 +107,11 @@ public class AppointmentService implements IAppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado con id: " + id));
 
         // Regla de negocio: Solo podemos confirmar turnos pendientes
-        if (!"PENDING".equalsIgnoreCase(appointment.getStatus())) {
+        if (appointment.getStatus() != AppointmentStatus.PENDING) {
             throw new BusinessRuleException("Solo se pueden confirmar turnos en estado PENDING.");
         }
 
-        appointment.setStatus("CONFIRMED");
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
         appointment = appointmentRepository.save(appointment);
 
         return AppointmentMapper.toDto(appointment);
@@ -123,11 +124,11 @@ public class AppointmentService implements IAppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado con id: " + id));
 
         // Regla de negocio: Solo podemos confirmar turnos pendientes
-        if ("CANCELLED".equalsIgnoreCase(appointment.getStatus())) {
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
             throw new BusinessRuleException("El turno ya se encuentra cancelado");
         }
 
-        appointment.setStatus("CANCELLED");
+        appointment.setStatus(AppointmentStatus.CANCELLED);
         appointment.setCancelReason(request.reason());
         appointment = appointmentRepository.save(appointment);
 
@@ -141,8 +142,8 @@ public class AppointmentService implements IAppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado con id: " + id));
 
         // Regla de negocio: No aplica a turnos CANCELLED ni COMPLETED
-        String status = appointment.getStatus().toUpperCase();
-        if ("CANCELLED".equals(status) || "COMPLETED".equals(status)) {
+        AppointmentStatus status = appointment.getStatus();
+        if (status == AppointmentStatus.CANCELLED || status == AppointmentStatus.COMPLETED) {
             throw new BusinessRuleException("No se puede reprogramar un turno que ya está " + status + ".");
         }
 
@@ -182,7 +183,7 @@ public class AppointmentService implements IAppointmentService {
     @Transactional(readOnly = true)
     public List<AppointmentDto> getPendingAppointments() {
         List<AppointmentEntity> appointments = appointmentRepository
-                .findByStatusOrderByStartAtAsc("PENDING");
+                .findByStatusOrderByStartAtAsc(AppointmentStatus.PENDING);
 
         return appointments.stream()
                 .map(AppointmentMapper::toDto)

@@ -1,6 +1,7 @@
 package com.nobambidevteam.barberApi.modules.appointment.repository;
 
 import com.nobambidevteam.barberApi.modules.appointment.entity.AppointmentEntity;
+import com.nobambidevteam.barberApi.modules.appointment.enums.AppointmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
@@ -12,5 +13,5 @@ public interface IAppointmentRepository extends JpaRepository<AppointmentEntity,
     List<AppointmentEntity> findByStaffIdAndStartAtBetweenOrderByStartAtAsc(UUID staffId, Instant start, Instant end);
 
     // Busca turnos por estado (ej: "PENDING") y los ordena por hora de inicio
-    List<AppointmentEntity> findByStatusOrderByStartAtAsc(String status);
+    List<AppointmentEntity> findByStatusOrderByStartAtAsc(AppointmentStatus status);
 }
